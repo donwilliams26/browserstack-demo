@@ -1,116 +1,81 @@
-# BrowserStack Demo – Python + Pytest Assignment
+# BrowserStack demo – Python + pytest
 
-This is a small project where I wrote one UI test using Selenium + Pytest and ran it on multiple browsers/devices through BrowserStack.  
-I also connected it to a Jenkins pipeline so the test can run automatically.
+This is a small UI test suite I wrote for the BrowserStack Customer Engineer exercise.
 
-The purpose of the test is basically:
-- log into bstackdemo.com  
-- wait for the products to load  
-- try to filter by Samsung (if available)  
-- check that the Galaxy S20+ product is visible  
-- and where possible, try to “favourite” it and confirm it appears in the Favourites page
+The goal of the test is to:
 
-Some parts of the UI change depending on device (especially on the real Android device), so I added some simple checks so the test doesn’t fully fail when the UI layout behaves differently.
+- open https://bstackdemo.com
+- log in with `demouser / testingisfun99`
+- (if possible) filter products by **Samsung**
+- find the **Galaxy S20+** product
+- where the UI allows it, try to “favourite” the item and check it on the Favourites page
 
----
+The same test is run on three environments through BrowserStack:
 
-browserstack-demo/
-├── tests/
-│ ├── conftest.py # Where BrowserStack capabilities + driver fixture live
-│ └── test_favorite_samsung.py # The actual test file I wrote
-├── browserstack.yml # Tells BrowserStack which environments to run
-├── Jenkinsfile # Jenkins pipeline script
-├── requirements.txt # Python packages used
-└── README.md
-
+- Windows 10 / Chrome (latest)
+- macOS Ventura / Firefox (latest)
+- Samsung Galaxy S22 / Android 12 (Chrome)
 
 ---
 
-## How the test works (in simple terms)
+## Project layout
 
-### 1. Login flow  
-The script clicks “Sign In”, picks a username and password from the dropdowns, and logs in.
-
-### 2. Waiting for the products  
-I wrote a helper function that tries to wait until at least one product title appears.  
-If product titles never show up:
-- on desktop browsers → I fail the test  
-- on mobile (real device) → I skip the rest because the UI behaves differently
-
-### 3. Optional Samsung filter  
-I tried two different locators (checkbox and label) because depending on the version of the UI it may not be displayed.  
-If neither is found, I just move on without failing the test.
-
-### 4. Locating Galaxy S20+  
-Once the products are visible, the script looks for the Galaxy S20+ title and then finds its “product card” container.
-
-### 5. Best-effort favourite  
-This is optional because some layouts (especially mobile) don't show the favourite/heart button the same way.  
-I search for several possible CSS selectors.  
-If I find it, I click it and then open the Favourites page to verify the item is there.  
-If not, the test simply stops after validating that Galaxy S20+ is present in the main list.
+- `tests/conftest.py` – BrowserStack capabilities and the `driver` fixture  
+- `tests/test_favorite_samsung.py` – main UI test for the Galaxy S20+ flow  
+- `browserstack.yml` – tells BrowserStack SDK which environments to run  
+- `requirements.txt` – Python dependencies  
+- `Jenkinsfile` – Jenkins pipeline script
 
 ---
 
-## Running the test locally (BrowserStack SDK)
+## How the test behaves
 
-### Requirements
-- Python 3
-- BrowserStack Automate credentials
+### Login
 
-### Install packages
+The test clicks **Sign In**, chooses `demouser` and `testingisfun99` from the dropdowns, and logs in.
 
+### Waiting for products
 
-python3 -m venv env
-source env/bin/activate # (Windows: env\Scripts\activate)
-pip install -r requirements.txt
+After login, I wait until at least one product title (`p.shelf-item__title`) is visible.
 
+- On desktop browsers: if no products appear, the test fails.
+- On the real Android device: if titles never appear (because the layout behaves differently), the test stops early and doesn’t fail the whole suite.
 
-### Set environment variables
+### Samsung filter
 
-export BROWSERSTACK_USERNAME="your-username"
-export BROWSERSTACK_ACCESS_KEY="your-key"
+I try to apply the Samsung brand filter in a “best effort” way:
 
+1. First I look for a checkbox with `value="Samsung"`.
+2. If that isn’t found, I look for a `<label>` that contains the text “Samsung”.
 
-### Run the tests
+If neither is found (for example on a different mobile layout), the test just continues without filtering.
 
-browserstack-sdk python -m pytest -q
+### Galaxy S20+ and favourites
 
+Once products are visible, the test:
 
+1. Finds the **Galaxy S20+** title.
+2. Locates its parent product card.
+3. Tries a small set of CSS selectors to find a “favourite/heart” button inside the card.
+4. If a favourite button exists:
+   - clicks it,
+   - opens the **Favourites** page,
+   - checks that **Galaxy S20+** appears there.
+5. If no favourite button is found, the test still passes as long as Galaxy S20+ is visible in the main list.
 
-This launches the test on:
-- Windows 10 Chrome  
-- macOS Firefox  
-- Samsung Galaxy S22 real device
-
----
-
-## Jenkins Pipeline (basic explanation)
-
-I created a **Jenkinsfile** in the root of the repo so Jenkins can pull the project from GitHub and run the test automatically.
-
-### Jenkins steps
-1. Jenkins checks out the GitHub repository  
-2. Jenkins creates a Python virtual environment  
-3. Installs the requirements  
-4. Runs the BrowserStack SDK command:
-
-
-browserstack-sdk python -m pytest -q
-
-
-### Credentials  
-In Jenkins, I added two “Secret text” credentials:
-- browserstack-username  
-- browserstack-access-key  
-
-The Jenkinsfile reads these and sets them as environment variables.
+This makes the test a bit more tolerant across desktop vs real mobile devices.
 
 ---
 
-## What this project shows
-- My ability to automate a UI test using Selenium + Pytest  
-- Basic handling of cross-browser and mobile differences  
-- Setting up BrowserStack execution  
-- Setting up a working Jenkins pipeline  
-- Structuring a small automation project in a clean way without over-complicating it
+## Running the tests locally
+
+Prerequisites:
+
+- Python 3.9+
+- A BrowserStack Automate account
+
+Set your credentials as environment variables (no hard-coding in the code):
+
+**bash**
+export BROWSERSTACK_USERNAME=your_username
+export BROWSERSTACK_ACCESS_KEY=your_access_key
