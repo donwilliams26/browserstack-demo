@@ -1,0 +1,15 @@
+# browserstack.yml
+
+userName: ${BROWSERSTACK_USERNAME}
+accessKey: ${BROWSERSTACK_ACCESS_KEY}
+
+framework: pytest
+
+# Global capabilities (meta) – actual browser/device setup
+# is done in tests/conftest.py via get_caps(...)
+capabilities:
+  projectName: "BrowserStack Demo Shop"
+  buildName: "Galaxy S20+ favourites"
+  sessionName: "Favourite Galaxy S20+"
+  browserstack.console: "info"
+  browserstack.networkLogs: true
